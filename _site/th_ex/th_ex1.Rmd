@@ -1,34 +1,48 @@
 ---
 title: "Take-home Exercise 1"
 description: |
-  In this Take-home Exercise, I will explore .....
+  Creating data visualisation beyond default
 author:
   - name: Antonius Handy 
     url: https://www.linkedin.com/in/antoniushandy
-    affiliation: School of Computing and Information Systems
-    affiliation_url: https://scis.smu.edu.sg
+    affiliation: Singapore Management University, Master of IT in Business
+    affiliation_url: https://scis.smu.edu.sg/master-it-business
 date: "`r Sys.Date()`"
-output: distill::distill_article
+output: 
+  distill::distill_article:
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
 ```
 
-# Overview
+# 1. Overview
 
-In this take-home exercise, appropriate static statistical graphics methods are used to reveal the demographic of the city of Engagement, Ohio USA. 
+In this take-home exercise, we are going to reveal the demographic of the city of Engagement, Ohio USA by using appropriate static statistical graphics methods.
 
-The data should be processed by using appropriate tidyverse family of packages and the statistical graphics must be prepared using ggplot2 and its extensions.
+The data is processed by using appropriate tidyverse family of packages, whereas the statistical graphics are prepared using ggplot2 and its extensions.
 
-# Getting Started
+### INTERESTING FACT
+
+Engagement city does not physically exist in Google Maps. It often refers to Urbana which is located halfway between Dayton and Marion (dating and marrying). Source: [*Barry Popik*](https://www.barrypopik.com/index.php/new_york_city/entry/ohio_wheres_engagement)
+
+![](image/Ohio.jpg){width=60%}
+
+Photo: [*Greenwich Mean Time*](https://greenwichmeantime.com/time-zone/usa/ohio/map/)
+
+# 2. Getting Started
 
 Before we get started, it is important for us to ensure that the required R packages have been installed. If yes, we will load the R packages. If they have yet to be installed, we will install the R packages and load them onto R environment.
 
-The chunk code below will do the trick.
+The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/), [**ggdist**](https://mjskay.github.io/ggdist/index.html) and [**hrbrthemes**](https://www.rdocumentation.org/packages/hrbrthemes/versions/0.1.0).
 
 ```{r}
-packages = c('tidyverse')
+packages = c('tidyverse','ggdist','hrbrthemes')
 
 for(p in packages){
   if(!require(p, character.only = T)){
@@ -38,24 +52,244 @@ for(p in packages){
 }
 ```
 
-# Importing Data
+# 3. Data
 
-The code chunk below import *Exam_data.csv* from the data folder into R by using [`read_csv()`](https://readr.tidyverse.org/reference/read_delim.html) of [**readr**](https://readr.tidyverse.org/) and save it as a tibble data frame called *exam_data*.
+### DATA SOURCE
+The original dataset was obtained from [*VAST Challenge 2022*](https://vast-challenge.github.io/2022/index.html) in csv format. It consists of basic information about the residents of Engagement, OH that have agreed to participate in
+this study.
 
-```{r}
-exam_data <- read_csv("data/Exam_data.csv")
-
-```
-
-# A Simple Bar Chart
-
-The code chunk below plot a bar chart by using geom_bar() of ggplot2.
+### IMPORTING DATA
+The code chunk below imports dataset into R by using `read_csv()` of **readr** and saves it as a tibble data frame called *demographics*. It consists of 1011 records as shown below.
 
 ```{r}
-ggplot(data = exam_data,
-       aes(x = RACE)) +
-  geom_bar()
+demographics <- read_csv("data/Participants.csv")
+glimpse(demographics)
 ```
 
+### DATA WRANGLING
 
+For easier understanding, the age distribution of the population is further split into 4 broad age groups of similar distribution, namely 30 and below, 31-40, 41-50, and 51 and above.
 
+To do this, `mutate()` of **dplyr** adds a new variable called *age_category* while still preserves the existing variables - *age*.
+
+```{r}
+demographics <- demographics %>%
+  mutate(age_category=cut(age, 
+                          breaks=c(17, 30, 40, 50, 60),
+                          labels=c('30 and below','31-40','41-50','51 and above')))
+```
+
+# 4. Demographic Visualisation
+
+### STATIC STATISTICAL GRAPH METHODS
+Basic statistical graphs are derived from [**ggplot2**](https://ggplot2.tidyverse.org/index.html), such as `geom_bar()` to create a bar chart, `geom_histogram()` to create a histogram, `geom_text()` to display a text, `geom_hline()` to create a horizontal line, and `coord_flip()` to rotate vertical plots into horizontal plots. 
+
+Next, we also explore and go beyond basic statistical graphs by using [**ggdist**](https://mjskay.github.io/ggdist/index.html) package, such as `stat_halfeye()` to create a half violin plot, as well as `stat_dots()`.
+
+The label on x-axis, label on y-axis and title are set by `xlab()`, `ylab()` and `ggtitle()` respectively, whereas the base theme used below is `theme_ipsum()` of [**hrbrthemes**](https://www.rdocumentation.org/packages/hrbrthemes/versions/0.1.0) which is an Arial Narrow-based theme.
+
+See Appendix section for more details.
+
+### MARITAL STATUS AND KIDS
+Out of 1011 Engagement residents participated in this study, about 70% of them do not have kids. 
+Furthermore, the second graph shows that among these 710 residents without kids, 337 of them are currently single.
+
+```{r echo=FALSE, eval=TRUE}
+ggplot(data = demographics,
+       aes(x = haveKids)) +
+  geom_bar() +
+  geom_text(aes(label=..count..),
+            stat="count",
+            vjust=1.5,
+            color="white") +
+  xlab("Residents Have Kids") +
+  ylab("No. of\nResidents") +
+  ggtitle("Only 30% of Engagement Residents Have Kids",
+          subtitle = "A survey of 1011 Residents Taken in 2022") +
+  theme_ipsum(plot_title_size = 14,
+              axis_title_face = 24,
+              base_size=10,
+              grid="Y")
+```
+
+```{r echo=FALSE, eval=TRUE}
+ggplot(data = demographics,
+       aes(x = householdSize)) +
+  geom_bar() +
+  geom_text(aes(label=..count..),
+            stat="count",
+            vjust=1.5,
+            color="white") +
+  xlab("Household Size (Persons)") +
+  ylab("No. of\nResidents") +
+  ggtitle("Most of Households Consist of 2 Person",
+          subtitle = "A survey of 1011 Residents Taken in 2022") +
+  theme_ipsum(plot_title_size = 14,
+              axis_title_face = 24,
+              base_size=10,
+              grid="Y")
+```
+
+### HOW HAPPY ARE ENGAGEMENT RESIDENTS?
+
+Two figures below show the happiness level across different age groups and education levels.
+
+It is observed that the happiness level is almost equally distributed among young adults aged 30 and below, while on the other hand, most of the elderlies seem to be unhappy.
+In addition, unhappiness is also associated with low-educated residents.
+
+```{r echo=FALSE, eval=TRUE}
+ggplot(data = demographics,
+       aes(x = joviality*100))+
+  geom_histogram(bins=20) +
+  facet_grid(~ age_category) +
+  xlab("Happiness Level Percentage") +
+  ylab("No. of\nResidents") +
+  scale_x_continuous(breaks = c(0,50,100)) +
+  ggtitle("Elderlies are Getting Unhappy",
+          subtitle="Happiness Level Across Different Age Groups") +
+  theme_ipsum(plot_title_size = 14,
+              axis_title_face = 24,
+              strip_text_size = 10,
+              base_size=10,
+              plot_margin = margin(5,5,5,5))
+```
+
+```{r echo=FALSE, eval=TRUE}
+ggplot(data=demographics, 
+       aes(x = educationLevel, y = joviality*100)) +
+  scale_y_continuous(breaks = seq(0, 100, 50), 
+                     limits = c(0, 100)) + 
+  stat_halfeye(adjust = .33, 
+               width = .67, 
+               color = NA,
+               justification = -.01,
+               position = position_nudge(
+                 x = .15)) + 
+  stat_dots(side = "left", 
+            justification = 1.1, 
+            binwidth = .25,
+            dotsize = 5) +
+  xlab("Education Level") +
+  ylab("Happiness Level Percentage") +
+  ggtitle("Low-educated Residents Tend to be Unhappy",
+          subtitle="Happiness Level Across Different Education Levels") +
+  theme_ipsum(plot_title_size = 14,
+              axis_title_face = 24,
+              strip_text_size = 10,
+              base_size=10) +
+  geom_hline(aes(yintercept=mean(joviality,
+                                 na.rm=T)*100),
+             color="red", 
+             linetype="dashed", 
+             size=0.5) +
+  geom_text(aes(4.5,mean(joviality)*100,
+                label="Average", vjust=-0.5), size=3)+
+  coord_flip()
+```
+
+# 5. References
+
+https://isss608-ay2021-22april.netlify.app/hands-on_ex/hands-on_ex01/hands-on_ex01#1
+
+https://isss608-ay2021-22april.netlify.app/hands-on_ex/hands-on_ex02/hands-on_ex02#1
+
+https://rstudio.github.io/distill/basics.html
+
+https://www.r-bloggers.com/2021/09/adding-text-labels-to-ggplot2-bar-chart/
+
+https://www.statology.org/r-create-categorical-variable-from-continuous/
+
+# 6. Appendix
+The code chunk below displays the **number of Engagement residents that have kids**.
+
+```{r eval=FALSE}
+ggplot(data = demographics,
+       aes(x = haveKids)) +
+  geom_bar() +
+  geom_text(aes(label=..count..),
+            stat="count",
+            vjust=1.5,
+            color="white") +
+  xlab("Residents Have Kids") +
+  ylab("No. of\nResidents") +
+  ggtitle("Only 30% of Engagement Residents Have Kids",
+          subtitle = "A survey of 1011 Residents Taken in 2022") +
+  theme_ipsum(plot_title_size = 14,
+              axis_title_face = 24,
+              base_size=10,
+              grid="Y")
+```
+
+The code chunk below displays the **household distribution** among Engagement residents.
+
+```{r eval=FALSE}
+ggplot(data = demographics,
+       aes(x = householdSize)) +
+  geom_bar() +
+  geom_text(aes(label=..count..),
+            stat="count",
+            vjust=1.5,
+            color="white") +
+  xlab("Household Size (Persons)") +
+  ylab("No. of\nResidents") +
+  ggtitle("Most of Households Consist of 2 Person",
+          subtitle = "A survey of 1011 Residents Taken in 2022") +
+  theme_ipsum(plot_title_size = 14,
+              axis_title_face = 24,
+              base_size=10,
+              grid="Y")
+```
+
+The code chunk below displays **happiness level percentage across different age groups**.
+
+```{r eval=FALSE}
+ggplot(data = demographics,
+       aes(x = joviality*100))+
+  geom_histogram(bins=20) +
+  facet_grid(~ age_category) +
+  xlab("Happiness Level Percentage") +
+  ylab("No. of\nResidents") +
+  scale_x_continuous(breaks = c(0,50,100)) +
+  ggtitle("Elderlies are Getting Unhappy",
+          subtitle="Happiness Level Across Different Age Groups") +
+  theme_ipsum(plot_title_size = 14,
+              axis_title_face = 24,
+              strip_text_size = 10,
+              base_size=10,
+              plot_margin = margin(5,5,5,5))
+```
+
+The code chunk below displays **happiness level percentage across different education levels**.
+
+```{r eval=FALSE}
+ggplot(data=demographics, 
+       aes(x = educationLevel, y = joviality*100)) +
+  scale_y_continuous(breaks = seq(0, 100, 50), 
+                     limits = c(0, 100)) + 
+  stat_halfeye(adjust = .33, 
+               width = .67, 
+               color = NA,
+               justification = -.01,
+               position = position_nudge(
+                 x = .15)) + 
+  stat_dots(side = "left", 
+            justification = 1.1, 
+            binwidth = .25,
+            dotsize = 5) +
+  xlab("Education Level") +
+  ylab("Happiness Level\nPercentage") +
+  ggtitle("Low-educated Residents Tend to be Unhappy",
+          subtitle="Happiness Level Across Different Education Levels") +
+  theme_ipsum(plot_title_size = 14,
+              axis_title_face = 24,
+              strip_text_size = 10,
+              base_size=10) +
+  geom_hline(aes(yintercept=mean(joviality,
+                                 na.rm=T)*100),
+             color="red", 
+             linetype="dashed", 
+             size=0.5) +
+  geom_text(aes(5,mean(joviality)*100,
+                label="Average", vjust=-0.5), size=3)+
+  coord_flip()
+```
