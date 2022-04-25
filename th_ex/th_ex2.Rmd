@@ -1,0 +1,63 @@
+---
+title: "Take-home Exercise 2"
+description: |
+  Creating data visualisation beyond default
+author:
+  - name: Antonius Handy 
+    url: https://www.linkedin.com/in/antoniushandy
+    affiliation: Singapore Management University, Master of IT in Business
+    affiliation_url: https://scis.smu.edu.sg/master-it-business
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+# 1. Overview
+
+In this take-home exercise, we are going to reveal the demographic of the city of Engagement, Ohio USA by using appropriate static statistical graphics methods.
+
+The data is processed by using appropriate tidyverse family of packages, whereas the statistical graphics are prepared using ggplot2 and its extensions.
+
+# 2. Getting Started
+
+Before we get started, it is important for us to ensure that the required R packages have been installed. If yes, we will load the R packages. If they have yet to be installed, we will install the R packages and load them onto R environment.
+
+The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/), [**ggdist**](https://mjskay.github.io/ggdist/index.html) and [**hrbrthemes**](https://www.rdocumentation.org/packages/hrbrthemes/versions/0.1.0).
+
+```{r}
+packages = c('tidyverse','ggdist','hrbrthemes')
+
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+# 3. Data
+
+### DATA SOURCE
+The original dataset was obtained from [*VAST Challenge 2022*](https://vast-challenge.github.io/2022/index.html) in csv format. It consists of basic information about the residents of Engagement, OH that have agreed to participate in
+this study.
+
+### IMPORTING DATA
+The code chunk below imports dataset into R by using `read_csv()` of **readr** and saves it as a tibble data frame called *demographics*. It consists of 1011 records as shown below.
+
+```{r}
+demographics <- read_csv("data/Participants.csv")
+glimpse(demographics)
+```
+
+
+
+
