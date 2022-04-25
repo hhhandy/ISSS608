@@ -1,10 +1,13 @@
 ---
 title: "About this site"
 description: |
-  Some additional details about the website
+  Detect the expected and discover the unexpected
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
+This website is part of [**SMU MITB**](https://scis.smu.edu.sg/master-it-business/) course - Visual Analytics & Applications.
+
+It is designed to explore visual representation of business data interactively.

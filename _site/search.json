@@ -3,18 +3,18 @@
     {
       "path": "about.html",
       "title": "About this site",
-      "description": "Some additional details about the website",
+      "description": "Detect the expected and discover the unexpected",
       "author": [],
-      "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2022-04-17T22:20:17+08:00"
+      "contents": "\r\nThis website is part of SMU\r\nMITB course - Visual Analytics & Applications.\r\nIt is designed to explore visual representation of business data\r\ninteractively.\r\n\r\n\r\n\r\n",
+      "last_modified": "2022-04-25T21:38:14+08:00"
     },
     {
       "path": "index.html",
       "title": "Visual Analytics",
-      "description": "Welcome to the website. I hope you enjoy it!\n",
+      "description": "Welcome to my website. I hope you enjoy it!\n",
       "author": [],
-      "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2022-04-25T21:16:31+08:00"
+      "contents": "\r\nYou will see how visual analytics techniques can be used to interact\r\nwith data from various sources and formats.\r\n\r\n\r\n\r\n\r\n",
+      "last_modified": "2022-04-25T21:46:58+08:00"
     }
   ],
   "collections": []
