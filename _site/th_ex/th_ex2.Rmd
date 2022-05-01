@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE,
 
 # 1. Overview
 
-In this take-home exercise, we are going to reveal the demographic of the city of Engagement, Ohio USA by using appropriate static statistical graphics methods.
+Similar to [*take-home exercise 1*](https://isss608-hhhandy.netlify.app/th_ex/th_ex1.html), we are still interested in the demographic of the city of Engagement, Ohio USA but this time we will evaluate and make over the data visualisation made by one of our classmates.
 
 The data is processed by using appropriate tidyverse family of packages, whereas the statistical graphics are prepared using ggplot2 and its extensions.
 
@@ -31,10 +31,10 @@ The data is processed by using appropriate tidyverse family of packages, whereas
 
 Before we get started, it is important for us to ensure that the required R packages have been installed. If yes, we will load the R packages. If they have yet to be installed, we will install the R packages and load them onto R environment.
 
-The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/), [**ggdist**](https://mjskay.github.io/ggdist/index.html) and [**hrbrthemes**](https://www.rdocumentation.org/packages/hrbrthemes/versions/0.1.0).
+The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/) and [**ggridges**](https://mjskay.github.io/ggdist/index.html).
 
 ```{r}
-packages = c('tidyverse','ggdist','hrbrthemes')
+packages = c('tidyverse','ggridges')
 
 for(p in packages){
   if(!require(p, character.only = T)){
@@ -46,18 +46,207 @@ for(p in packages){
 
 # 3. Data
 
-### DATA SOURCE
-The original dataset was obtained from [*VAST Challenge 2022*](https://vast-challenge.github.io/2022/index.html) in csv format. It consists of basic information about the residents of Engagement, OH that have agreed to participate in
+### 3.1 Data Source
+The original datasets were obtained from [*VAST Challenge 2022*](https://vast-challenge.github.io/2022/index.html) in csv format. It consists of basic information about the residents of Engagement, OH that have agreed to participate in
 this study.
 
-### IMPORTING DATA
-The code chunk below imports dataset into R by using `read_csv()` of **readr** and saves it as a tibble data frame called *demographics*. It consists of 1011 records as shown below.
+### 3.2 Importing Data
+The code chunk below imports 2 datasets, namely *Participants.csv* and *Jobs.csv* into R by using `read_csv()` of **readr** and saves it as tibble data frames called *demographics* and *jobs* respectively. Demographic dataset consists of 1011 records, whereas Jobs dataset consists of 1328 records as shown below.
 
 ```{r}
 demographics <- read_csv("data/Participants.csv")
 glimpse(demographics)
 ```
 
+```{r}
+jobs <- read_csv("data/Jobs.csv")
+glimpse(jobs)
+```
+
+### 3.3 Data Wrangling
+
+Column names are renamed such that the first letter of each word is capitalised. To do this, we will use a function called `rename()` of **dplyr**.
+
+```{r}
+demographics <- demographics %>%
+  rename('ParticipantID' = 'participantId', 
+         'HouseholdSize' = 'householdSize', 
+         'HaveKids' = 'haveKids', 
+         'Age' = 'age', 
+         'EducationLevel' = 'educationLevel', 
+         'InterestGroup' = 'interestGroup', 
+         'Joviality' = 'joviality')
+```
+
+```{r}
+jobs <- jobs %>%
+  rename('JobID' = 'jobId', 
+         'EmployerID' = 'employerId', 
+         'HourlyRate' = 'hourlyRate', 
+         'StartTime' = 'startTime', 
+         'EndTime' = 'endTime', 
+         'DaystoWork' = 'daysToWork', 
+         'EducationRequirement' = 'educationRequirement')
+```
+
+# 4. Demographic Visualisation
+
+### 4.1 Age Distribution and Having Kids Status
+
+**ORIGINAL DATA VISUALISATION**
+
+![](image/thex2_1.png){width=90%}
+
+**CLARITY**
+
+- <span style="color:#009900">y-axis Range</span>: Good visualisation as it starts from zero.
+- <span style="color:#009900">Legend</span>: Legend is clearly shown next to the histogram.
+- <span style="color:red">Misleading Title</span>: The word 'versus' is misleading since the y-axis only shows number of people. Instead, it would be better to write the key point of the bar chart.
+- <span style="color:red">Missing Mean/Median Line</span>: Having the average and/or median line would be better for visualisation.
+
+**AESTHETIC**
+
+- <span style="color:#009900">Bar Colour</span>: Colour is appropriately selected to easily distinguish whether the person has kids or not.
+- <span style="color:red">Bar Outline</span>: The outline colour should have been selected to show clearer border lines between each bar. 
+- <span style="color:red">Legend Title</span>: The legend title should have space in between words and the first letter of the word should be capitalised.
+- <span style="color:red">y-axis Label</span>: It is more reader-friendly to write the label horizontally.
+
+**MAKEOVER DESIGN**
+
+In this makeover design, we add color in `geom_histogram()` to depict the outline of the bar. In addition, we also add some other functions such as `theme()` to rotate the y-axis label, `geom_vline()` to create a dashed mean line, and `geom_text()` to display the text 'Average'.
+
+```{r}
+ggplot(data = demographics, 
+       aes(x = Age, fill = HaveKids)) +
+  geom_histogram(bins = 20,
+                 color = "grey20") +
+  labs(x = "Age",
+       y = "No. of\n People",
+       title = "Most People Do Not Have Kids",
+       fill = "Have Kids") +
+  theme(axis.title.y= element_text(angle=0)) +
+  geom_vline(aes(xintercept=mean(Age,
+                                 na.rm=T)),
+             color="black", 
+             linetype="dashed", 
+             size=0.5) +
+  geom_text(aes(42,85,
+                label="Average"), size=3.5)
+```
+
+### 4.2 Education Level Distribution
+
+**ORIGINAL DATA VISUALISATION**
+
+![](image/thex2_2.png){width=90%}
+**CLARITY**
+
+- <span style="color:#009900">Title</span>: The key point of the bar chart is clearly stated.
+- <span style="color:#009900">y-axis Range</span>: Good visualisation as it starts from zero.
+- <span style="color:#009900">Bar Order</span>: It shows an effective comparison as the bars are sorted by their respective frequency values in descending order.
+- <span style="color:red">Missing Frequency Values</span>: Frequency value for each bar should be added to provide additional information.
+
+**AESTHETIC**
+
+- <span style="color:red">y-axis Label</span>: The label title is not consistent as in the previous chart, i.e. Number of People instead of No. of People. In addition, it is more reader-friendly to write the label horizontally.
+
+**MAKEOVER DESIGN**
+
+In this makeover design, we add some functions such as `theme()` to rotate the y-axis label and `geom_text()` to display the frequency on top of each bar.
+
+```{r}
+ggplot(data = demographics, 
+       aes(x = reorder(EducationLevel, EducationLevel, function(x)-length(x)))) +
+  geom_bar(fill = "lightblue")+
+  labs(x = "Education Level",
+       y = "No. of\n People",
+       title = "Most People Have High School or College Degree") +
+  theme(axis.title.y= element_text(angle=0)) +
+  geom_text(aes(label=..count..),
+            stat="count",
+            vjust=-0.3)
+```
 
 
+### 4.3 How Education Level Affects Joviality?
 
+**ORIGINAL DATA VISUALISATION**
+
+![](image/thex2_3.png){width=90%}
+
+**CLARITY**
+
+- <span style="color:#009900">Title</span>: The key point of the boxplot is clearly stated.
+- <span style="color:#009900">Boxplot Order</span>: Similar to the previous bar chart, the boxplots are sorted in descending order for effective comparison. 
+- <span style="color:red">Unclear Average Value</span>: At a glance, the four red dots lie on the same horizontal line. It would be clearer if the average value was shown as well.
+- <span style="color:red">y-axis Range</span>: The joviality index from 0 to 1 is quite difficult to understand. It would be better if the joviality index was expressed in terms of percentage, for instance, 100% joviality level.
+
+**AESTHETIC**
+
+- <span style="color:#009900">Mean Point</span>: Colour and size are appropriately selected to show where the average lies on each boxplot.
+- <span style="color:red">Title</span>: The first letter of the word should be capitalised.
+- <span style="color:red">y-axis Label</span>: It is more reader-friendly to write the label horizontally.
+
+**MAKEOVER DESIGN**
+
+In this makeover design, we multiply *joviality* by 100 to get *joviality percentage*. Next, we add some functions such as `theme()` to rotate the y-axis label and `stat_summary()` to display the average value on each boxplot.
+
+```{r}
+ggplot(data = demographics, 
+       aes( x =reorder(EducationLevel, -Joviality), y = Joviality*100)) +
+  geom_boxplot()+
+  stat_summary(geom = "point",
+               fun = "mean",
+               colour = "red",
+               size = 1.5) +
+  stat_summary(fun.y=mean, colour="darkred", geom="text", show_guide = FALSE, 
+               vjust=-0.7, aes( label=round(..y.., digits=3))) +
+  labs( x = "Education Level",
+        y = "Joviality\n Percentage",
+        title = "Graduates are the Most Jovial on Average") +
+  theme(axis.title.y= element_text(angle=0))
+```
+
+
+### 4.4 How Education Level Affects Hourly Wage?
+
+**ORIGINAL DATA VISUALISATION**
+
+![](image/thex2_4.png){width=90%}
+
+**CLARITY**
+
+- <span style="color:#009900">Title</span>: The key point of the ridge plot is clearly stated.
+- <span style="color:#009900">x-axis Range</span>: Good visualisation as it starts from zero.
+- <span style="color:red">Missing Mean/Median Line</span>: Having the average and/or median line would be better for visualisation.
+
+**AESTHETIC**
+
+- <span style="color:red">Title</span>: The first letter of the word should be capitalised.
+- <span style="color:red">y-axis Label</span>: It is more reader-friendly to write the label horizontally.
+
+**MAKEOVER DESIGN**
+
+Similar to the first chart, in this ridge plot makeover design, we add some functions such as `theme()` to rotate the y-axis label, `geom_vline()` to create a dashed mean line, and `geom_text()` to display the text 'Average'.
+
+```{r}
+ggplot(data = jobs,
+       aes(x = HourlyRate, y = reorder( EducationRequirement, -HourlyRate))) +
+  geom_density_ridges(rel_min_height = 0.01)+
+  labs(x = "Hourly Rate",
+       y = "Education\n Requirement", 
+       title = "Graduates and Bachelors Earn Higher Hourly Wage") +
+  theme(axis.title.y= element_text(angle=0)) +
+  geom_vline(aes(xintercept=mean(HourlyRate,
+                                 na.rm=T)),
+             color="black", 
+             linetype="dashed", 
+             size=0.5) +
+  geom_text(aes(25,5.5,label="Average"), size=3)
+```
+
+# 5. References
+
+University of New Mexico. (n.d.). Colors in HTML. https://www.unm.edu/~tbeach/IT145/color.html
+
+Xie, Y.H., et.al. (2022, April 14). *Font Color*. R Markdown Cookbook. https://bookdown.org/yihui/rmarkdown-cookbook/font-color.html
