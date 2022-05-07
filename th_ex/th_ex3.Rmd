@@ -47,11 +47,15 @@ for(p in packages){
 # 3. Data
 
 ### 3.1 Data Source
-The original datasets were obtained from [*VAST Challenge 2022*](https://vast-challenge.github.io/2022/index.html) in csv format. It consists of basic information about the residents of Engagement, OH that have agreed to participate in
-this study.
+The original dataset was obtained from [*VAST Challenge 2022*](https://vast-challenge.github.io/2022/index.html) in csv format. It shows the financial information of the residents of Engagement, OH that have agreed to participate in this study.
 
 ### 3.2 Importing Data
+The code chunk below imports a dataset called *FinancialJournal.csv* into R by using `read_csv()` of **readr** and saves it as tibble data frame called *financial*. It consists of 1,856,330 records as shown below.
 
+```{r}
+financial <- read_csv("data/FinancialJournal.csv")
+glimpse(financial)
+```
 
 ### 3.3 Data Wrangling
 
