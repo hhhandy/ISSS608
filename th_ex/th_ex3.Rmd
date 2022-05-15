@@ -31,11 +31,11 @@ The data is processed by using appropriate tidyverse family of packages, whereas
 
 Before we get started, it is important for us to ensure that the required R packages have been installed. If yes, we will load the R packages. If they have yet to be installed, we will install the R packages and load them onto R environment.
 
-The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/), [**ggiraph**](https://davidgohel.github.io/ggiraph/), [**plotly**](https://plotly.com/r/) and [**gganimate**](https://gganimate.com/),
-[**zoo**](https://cran.r-project.org/web/packages/zoo/zoo.pdf) and [**trelliscopejs**](https://hafen.github.io/trelliscopejs/index.html.
+The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/), [**ggiraph**](https://davidgohel.github.io/ggiraph/), [**plotly**](https://plotly.com/r/), [**gganimate**](https://gganimate.com/),
+[**zoo**](https://cran.r-project.org/web/packages/zoo/zoo.pdf), [**trelliscopejs**](https://hafen.github.io/trelliscopejs/index.html), [**gifski**](https://cran.r-project.org/web/packages/gifski/index.html) and [**gapminder**](https://cran.r-project.org/web/packages/gapminder/index.html.
 
 ```{r}
-packages = c('tidyverse','ggiraph','plotly','gganimate','zoo','trelliscopejs')
+packages = c('tidyverse','ggiraph','plotly','gganimate','zoo','trelliscopejs','gifski','gapminder')
 
 for(p in packages){
   if(!require(p, character.only = T)){
@@ -82,7 +82,7 @@ expenses <- financial %>%
 
 Next, we are going to use `pivot_wider()` of **dplyr** to create new columns based on the amount of each category, and rename the new table as *fin_wide*.
 
-We will also strip all NA values by specifying `na.rm = TRUE` and calculate the living cost and revenue as follows.
+We will also strip all NA values by specifying `na.rm = TRUE` and calculate the living cost and revenue. Total savings will be computed as revenue minus living cost.
 
 **Living cost = Education + Food + Recreation + Shelter**
 
@@ -94,25 +94,20 @@ fin_wide <- financial %>%
               values_from = "Total") %>%
   rowwise() %>%
   mutate(LivingCost = sum(c_across(c(1:4)),na.rm=T)) %>%
-  mutate(Revenue = sum(c_across(c(5:6)),na.rm=T))
+  mutate(Revenue = sum(c_across(c(5:6)),na.rm=T)) %>%
+  mutate(Savings = sum(c_across(c(7:8)),na.rm=T)) %>%
+  mutate(participantId = as.character(participantId))
 head(fin_wide)
-```
-
-Total savings will be computed as revenue minus living cost. We will rename the new table as *fin_summary* and the new column as *Savings*.
-
-```{r}
-fin_summary <- financial %>%
-  group_by(participantId, yearmonth) %>%
-  summarise(Savings = sum(Total))
-head(fin_summary)
 ```
 
 # 4. Economic Visualisation
 
-## Financial Health of Residents from March 2022 to May 2023 
+## Financial Health of Residents 
+
+There are 1011 participants in this study. Trellis display below shows how the monthly savings of each participant changes from March 2022 to May 2023. 
 
 ```{r}
-qplot(yearmonth, Savings, data = fin_summary) +
+qplot(yearmonth, Savings, data = fin_wide) +
   labs(x = "Year & Month",
        y = "Savings") +
   theme_bw() +
@@ -123,11 +118,29 @@ qplot(yearmonth, Savings, data = fin_summary) +
                     self_contained = TRUE)
 ```
 
+## Overview of Living Costs and Revenue over Time
 
+It is noticed that there is a major shift from the bottom right hand corner to the top left hand corner. The revenue is getting smaller while the living costs are getting higher over a period of one year.
+
+```{r}
+ggplot(fin_wide %>% mutate(yearmonth = as.numeric(yearmonth)),
+       aes(x = Revenue, y = LivingCost, 
+           size = Revenue, 
+           colour = participantId)) +
+  geom_point(alpha = 0.7, 
+             show.legend = FALSE) +
+  scale_colour_manual(values = country_colors) +
+  scale_size(range = c(1, 6)) +
+  labs(title = 'Year: {frame_time}', 
+       x = 'Revenue',
+       y = 'Living Cost') +
+  transition_time(yearmonth) +
+  ease_aes('linear')
+```
 
 ## Average Monthly Expenses
 
-On average, residents allocate most of their monthly savings for shelter.
+On average, residents allocate most of their monthly savings for shelter, followed by recreation, food and lastly education.
 
 ```{r}
 p <- ggplot(data = expenses,
@@ -139,8 +152,232 @@ p <- ggplot(data = expenses,
 ggplotly(p)
 ```
 
+## Changes in Living Costs and Wage in More Detail
+
+Let us examine how wages and each expense other than shelter changes from March 2022 to May 2023. While the wages are shrinking, it is also found that the education and recreation cost are getting lower in May 2023.
+
+If we look further into the second graph, we could see that in March 2022 there are 2 distinct groups of participants. One group has relatively lower wages and lower food expenses, while the other group has higher wages as well as higher food expenses. However, in May 2023 they all become homogeneous.
+
+```{r eval=FALSE}
+fin_mar2022 <- fin_wide %>%
+  filter(yearmonth == 'Mar 2022')
+d <- highlight_key(fin_mar2022)
+p1 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Education*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+p2 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Food*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+p3 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Recreation*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+fig <- subplot(ggplotly(p1),
+               ggplotly(p2),
+               ggplotly(p3))
+annotations <- list(
+  list(x = 0.15, y = 0.95,
+       text = "Education vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE),
+  list(x = 0.5, y = 0.95,
+       text = "Food vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE),
+  list(x = 0.85, y = 0.95,
+       text = "Recreation vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE)
+)
+fig <- fig %>%
+  layout(title = 'Living Costs vs Wage in March 2022',
+         annotations = annotations)
+fig
+```
+
+```{r eval=FALSE}
+fin_may2023 <- fin_wide %>%
+  filter(yearmonth == 'May 2023')
+d <- highlight_key(fin_may2023)
+p1 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Education*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+p2 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Food*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+p3 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Recreation*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+fig <- subplot(ggplotly(p1),
+               ggplotly(p2),
+               ggplotly(p3))
+annotations <- list(
+  list(x = 0.15, y = 0.95,
+       text = "Education vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE),
+  list(x = 0.5, y = 0.95,
+       text = "Food vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE),
+  list(x = 0.85, y = 0.95,
+       text = "Recreation vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE)
+)
+fig <- fig %>%
+  layout(title = 'Living Costs vs Wage in May 2023',
+         annotations = annotations)
+fig
+```
+
+```{r echo=FALSE, eval=TRUE}
+fin_mar2022 <- fin_wide %>%
+  filter(yearmonth == 'Mar 2022')
+d <- highlight_key(fin_mar2022)
+p1 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Education*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+p2 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Food*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+p3 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Recreation*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+fig <- subplot(ggplotly(p1),
+               ggplotly(p2),
+               ggplotly(p3))
+annotations <- list(
+  list(x = 0.15, y = 0.95,
+       text = "Education vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE),
+  list(x = 0.5, y = 0.95,
+       text = "Food vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE),
+  list(x = 0.85, y = 0.95,
+       text = "Recreation vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE)
+)
+fig <- fig %>%
+  layout(title = 'Living Costs vs Wage in March 2022',
+         annotations = annotations)
+fig
+```
+
+```{r echo=FALSE, eval=TRUE}
+fin_may2023 <- fin_wide %>%
+  filter(yearmonth == 'May 2023')
+d <- highlight_key(fin_may2023)
+p1 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Education*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+p2 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Food*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+p3 <- ggplot(data=d, 
+            aes(x = Wage,
+                y = Recreation*-1)) +
+  geom_point(size=1) +
+  coord_cartesian(xlim=c(0,25000),
+                  ylim=c(0,2000))
+fig <- subplot(ggplotly(p1),
+               ggplotly(p2),
+               ggplotly(p3))
+annotations <- list(
+  list(x = 0.15, y = 0.95,
+       text = "Education vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE),
+  list(x = 0.5, y = 0.95,
+       text = "Food vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE),
+  list(x = 0.85, y = 0.95,
+       text = "Recreation vs Wage",
+       xref = "paper",  
+       yref = "paper",
+       xanchor = "center",
+       yanchor = "bottom",
+       showarrow = FALSE)
+)
+fig <- fig %>%
+  layout(title = 'Living Costs vs Wage in May 2023',
+         annotations = annotations)
+fig
+```
+
 # 5. References
 
-https://www.statology.org/sum-by-group-in-r/
+Altman, S., et. al. (2021, September 10). *Data Wrangling*. https://dcl-wrangle.stanford.edu/pivot-advanced.html#wider-1
 
-https://dcl-wrangle.stanford.edu/pivot-advanced.html#wider-1
+Plotly (n.d.). *Subplots in R*. https://plotly.com/r/subplots/
+
+Zach. (2021, May 26). *How to Calculate the Sum by Group in R (With Examples)*. Statology. https://www.statology.org/sum-by-group-in-r/
