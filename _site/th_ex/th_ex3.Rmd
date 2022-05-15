@@ -32,10 +32,10 @@ The data is processed by using appropriate tidyverse family of packages, whereas
 Before we get started, it is important for us to ensure that the required R packages have been installed. If yes, we will load the R packages. If they have yet to be installed, we will install the R packages and load them onto R environment.
 
 The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/), [**ggiraph**](https://davidgohel.github.io/ggiraph/), [**plotly**](https://plotly.com/r/), [**gganimate**](https://gganimate.com/),
-[**zoo**](https://cran.r-project.org/web/packages/zoo/zoo.pdf), [**trelliscopejs**](https://hafen.github.io/trelliscopejs/index.html), [**gifski**](https://cran.r-project.org/web/packages/gifski/index.html) and [**gapminder**](https://cran.r-project.org/web/packages/gapminder/index.html).
+[**zoo**](https://cran.r-project.org/web/packages/zoo/zoo.pdf), [**trelliscopejs**](https://hafen.github.io/trelliscopejs/index.html) and [**gifski**](https://cran.r-project.org/web/packages/gifski/index.html).
 
 ```{r}
-packages = c('tidyverse','ggiraph','plotly','gganimate','zoo','trelliscopejs','gifski','gapminder')
+packages = c('tidyverse','ggiraph','plotly','gganimate','zoo','trelliscopejs','gifski')
 
 for(p in packages){
   if(!require(p, character.only = T)){
@@ -119,7 +119,7 @@ qplot(yearmonth, Savings, data = fin_wide) +
                     self_contained = TRUE)
 ```
 
-## Overview of Living Costs and Revenue over Time
+## Overview of Living Costs and Revenue
 
 From the graph below, it is noticed that there is a major shift from the top right hand corner towards the bottom left hand corner. In general, both revenue and living costs are getting lower.
 
@@ -149,7 +149,7 @@ p <- ggplot(data = expenses,
   geom_boxplot() +
   xlab("Category") +
   ylab("Amount ($)") +
-  ggtitle("Average Monthly Expenses for Each Resident")
+  ggtitle("Monthly Expenses Distribution")
 ggplotly(p)
 ```
 
