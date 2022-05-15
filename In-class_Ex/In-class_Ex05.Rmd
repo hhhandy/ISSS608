@@ -1,0 +1,164 @@
+---
+title: "In-class Exercise 5"
+description: |
+  Time-series analysis with R
+author:
+  - name: Antonius Handy 
+    url: https://www.linkedin.com/in/antoniushandy
+    affiliation: Singapore Management University, Master of IT in Business
+    affiliation_url: https://scis.smu.edu.sg/master-it-business
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      message = FALSE,
+                      warning = FALSE,
+                      fig.retina = 3)
+```
+
+# 1. Getting Started
+
+## Setting up R packages
+
+To start with, **lubridate, tidyverse, data.table, ggthemes and ViSiElse** packages will be launched using `library()`.
+
+```{r}
+packages = c('lubridate', 'tidyverse','data.table','ggthemes','ViSiElse')
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+}
+```
+
+# 2. Data Preparation
+
+## Importing Data
+
+```{r}
+attacks <- read_csv("data/eventlog.csv")
+```
+
+## Data Wrangling
+
+Two new fields namely *wkday* and *hour* will be derived using these two steps below.
+
+```{r}
+make_hr_wkday <- function(ts, sc, tz) {
+  real_times <- ymd_hms(ts, 
+                        tz = tz[1], 
+                        quiet = TRUE)
+  dt <- data.table(source_country = sc,
+                   wkday = weekdays(real_times),
+                   hour = hour(real_times))
+  return(dt)
+  }
+```
+
+```{r}
+wkday_levels <- c('Saturday', 'Friday', 
+                  'Thursday', 'Wednesday', 
+                  'Tuesday', 'Monday', 
+                  'Sunday')
+attacks <- attacks %>%
+  group_by(tz) %>%
+  do(make_hr_wkday(.$timestamp, 
+                   .$source_country, 
+                   .$tz)) %>% 
+  ungroup() %>% 
+  mutate(wkday = factor(
+    wkday, levels = wkday_levels),
+    hour  = factor(
+      hour, levels = 0:23))
+```
+
+# 3. Calendar Heatmap
+
+## Single Heatmap
+
+```{r}
+grouped <- attacks %>% 
+  count(wkday, hour) %>% 
+  ungroup() %>%
+  na.omit()
+ggplot(grouped, 
+       aes(hour, 
+           wkday, 
+           fill = n)) + 
+geom_tile(color = "white", 
+          size = 0.1) + 
+theme_tufte(base_family = "Helvetica") + 
+coord_equal() +
+scale_fill_gradient(name = "# of attacks",
+                    low = "sky blue", 
+                    high = "dark blue") +
+labs(x = NULL, 
+     y = NULL, 
+     title = "Attacks by weekday and time of day") +
+theme(axis.ticks = element_blank(),
+      plot.title = element_text(hjust = 0.5),
+      legend.title = element_text(size = 8),
+      legend.text = element_text(size = 6) )
+```
+
+## Multiple Heatmaps
+
+We are going to identify the top 4 countries with the highest number of attacks.
+
+# 4. Working with ViSiElse
+
+```{r}
+data("typDay")
+```
+
+By default, ViSiElse shows the summary statistics (25% percentile, 50% percentile and 75% percentile). It purposely locate the circles far away from the blue bars to avoid overlapping. The distance between the first and third circle shows how large the IQR (Inter Quartile Range) is.
+
+```{r}
+visielse(typDay)
+```
+
+To omit this summary statistics, we can execute the below code chunk.
+
+```{r}
+visielse(typDay, informer = NULL)
+```
+
+The code chunk below will replace median by mean.
+
+```{r}
+visielse(typDay, informer = "mean")
+```
+
+Next, we will differentiate actions into two categories namely punctual and long. A punctual action is an action with no duration or not lasting long enough. A long action is an action having duration.
+
+```{r}
+p1 <- visielse(typDay, informer = NULL)
+b1 <- ConvertFromViSibook(p1@book)
+```
+
+```{r}
+b1 <- b1[order(as.numeric(b1$showorder)), ] # order the data.frame 
+b1$label <- c("Sleep", "Stop sleeping", "Wake up", "Take a shower", "Eat breakfast", 
+              "Start working", "Start eating lunch", "End of lunch", 
+              "Stop working", "Pick up the kids", "Start cooking", 
+              "End of dinner", "Go to sleep", "First coffee")
+b1[15,] <- c("sleep", "Sleeping", "l", 1, "start_sleep", "stop_sleep")
+b1[16,] <- c("work", "Working", "l", 5, "start_work", "stop_work")
+b1[17,] <- c("lunch", "Lunch break", "l", 6, "start_lunch", "stop_lunch")
+b1[18,] <- c("cook", "Cook and eat dinner", "l", 8, "start_cook", "stop_cook")
+b1$showorder <- c(NA, NA, 2, 3, 4, 5, NA, NA, 7, 9, NA, NA, 11, 12, 1, 6, 8, 10) 
+b1 <- b1[order(as.numeric(b1$showorder)), ]
+```
+
+The shape of long actions is different from punctual actions because 100 people have different start time and stop time.
+
+```{r}
+v2 <- visielse(typDay, book = b1, informer = NULL, doplot = F, pixel = 30)
+plot(v2, vp0w = 0.7, unit.tps = "min", scal.unit.tps = 30, main = "Typical day")
+```
