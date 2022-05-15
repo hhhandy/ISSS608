@@ -32,7 +32,7 @@ The data is processed by using appropriate tidyverse family of packages, whereas
 Before we get started, it is important for us to ensure that the required R packages have been installed. If yes, we will load the R packages. If they have yet to be installed, we will install the R packages and load them onto R environment.
 
 The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/), [**ggiraph**](https://davidgohel.github.io/ggiraph/), [**plotly**](https://plotly.com/r/), [**gganimate**](https://gganimate.com/),
-[**zoo**](https://cran.r-project.org/web/packages/zoo/zoo.pdf), [**trelliscopejs**](https://hafen.github.io/trelliscopejs/index.html), [**gifski**](https://cran.r-project.org/web/packages/gifski/index.html) and [**gapminder**](https://cran.r-project.org/web/packages/gapminder/index.html.
+[**zoo**](https://cran.r-project.org/web/packages/zoo/zoo.pdf), [**trelliscopejs**](https://hafen.github.io/trelliscopejs/index.html), [**gifski**](https://cran.r-project.org/web/packages/gifski/index.html) and [**gapminder**](https://cran.r-project.org/web/packages/gapminder/index.html).
 
 ```{r}
 packages = c('tidyverse','ggiraph','plotly','gganimate','zoo','trelliscopejs','gifski','gapminder')
@@ -48,7 +48,7 @@ for(p in packages){
 # 3. Data
 
 ### 3.1 Data Source
-The original dataset was obtained from [*VAST Challenge 2022*](https://vast-challenge.github.io/2022/index.html) in csv format. It shows the financial report of the residents of Engagement, OH that have agreed to participate in this study from March 2022 until May 2023.
+The original dataset was obtained from [*VAST Challenge 2022*](https://vast-challenge.github.io/2022/index.html) in csv format. It shows the financial report of 1011 residents of Engagement, OH that have agreed to participate in this study from March 2022 until May 2023.
 
 ### 3.2 Importing Data
 The code chunk below imports a dataset called *FinancialJournal.csv* into R by using `read_csv()` of **readr** and saves it as tibble data frame called *financial*. It consists of 1,856,330 records as shown below.
@@ -60,9 +60,9 @@ head(financial)
 
 ### 3.3 Data Wrangling
 
-As we are not interested in time, we will only pick up the month and year by using `as.yearmon()` of **zoo**. 
+As we are not interested in time, we will only pick up the month and year by using `as.yearmon()` of **zoo** and rename the new column as yearmonth. 
 
-The financial amounts are allocated into 6 categories namely Education, Food, Recreation, Rent Adjustment, Shelter and Wage. We are going to sum them up and group them by participant ID, yearmonth and category. 
+The financial journal consists of 6 categories namely Education, Food, Recreation, Rent Adjustment, Shelter and Wage. We are going to sum them up and group them by participant ID, yearmonth and category. 
 
 ```{r}
 financial <- financial %>%
@@ -82,11 +82,13 @@ expenses <- financial %>%
 
 Next, we are going to use `pivot_wider()` of **dplyr** to create new columns based on the amount of each category, and rename the new table as *fin_wide*.
 
-We will also strip all NA values by specifying `na.rm = TRUE` and calculate the living cost and revenue. Total savings will be computed as revenue minus living cost.
+We will also strip all NA values by specifying `na.rm = TRUE` and calculate the living cost, revenue and savings.
 
 **Living cost = Education + Food + Recreation + Shelter**
 
 **Revenue = Wage + Rent Adjustment**
+
+**Savings = Revenue - Living cost**
 
 ```{r}
 fin_wide <- financial %>%
@@ -95,8 +97,7 @@ fin_wide <- financial %>%
   rowwise() %>%
   mutate(LivingCost = sum(c_across(c(1:4)),na.rm=T)) %>%
   mutate(Revenue = sum(c_across(c(5:6)),na.rm=T)) %>%
-  mutate(Savings = sum(c_across(c(7:8)),na.rm=T)) %>%
-  mutate(participantId = as.character(participantId))
+  mutate(Savings = sum(c_across(c(7:8)),na.rm=T))
 head(fin_wide)
 ```
 
@@ -104,7 +105,7 @@ head(fin_wide)
 
 ## Financial Health of Residents 
 
-There are 1011 participants in this study. Trellis display below shows how the monthly savings of each participant changes from March 2022 to May 2023. 
+Trellis display below shows how monthly savings of each participant change from March 2022 to May 2023. 
 
 ```{r}
 qplot(yearmonth, Savings, data = fin_wide) +
@@ -120,27 +121,27 @@ qplot(yearmonth, Savings, data = fin_wide) +
 
 ## Overview of Living Costs and Revenue over Time
 
-It is noticed that there is a major shift from the bottom right hand corner to the top left hand corner. The revenue is getting smaller while the living costs are getting higher over a period of one year.
+From the graph below, it is noticed that there is a major shift from the top right hand corner towards the bottom left hand corner. In general, both revenue and living costs are getting lower.
 
 ```{r}
 ggplot(fin_wide %>% mutate(yearmonth = as.numeric(yearmonth)),
-       aes(x = Revenue, y = LivingCost, 
+       aes(x = Revenue, y = LivingCost*-1, 
            size = Revenue, 
            colour = participantId)) +
-  geom_point(alpha = 0.7, 
+  geom_point(alpha = 0.5, 
              show.legend = FALSE) +
-  scale_colour_manual(values = country_colors) +
+  scale_color_gradientn(colours = rainbow(100)) +
   scale_size(range = c(1, 6)) +
   labs(title = 'Year: {frame_time}', 
-       x = 'Revenue',
-       y = 'Living Cost') +
+       x = 'Revenue ($)',
+       y = 'Living Costs ($)') +
   transition_time(yearmonth) +
   ease_aes('linear')
 ```
 
-## Average Monthly Expenses
+## Monthly Expenses Distribution
 
-On average, residents allocate most of their monthly savings for shelter, followed by recreation, food and lastly education.
+On average, residents allocate most of their monthly revenue for shelter, followed by recreation, food and lastly education.
 
 ```{r}
 p <- ggplot(data = expenses,
@@ -154,32 +155,38 @@ ggplotly(p)
 
 ## Changes in Living Costs and Wage in More Detail
 
-Let us examine how wages and each expense other than shelter changes from March 2022 to May 2023. While the wages are shrinking, it is also found that the education and recreation cost are getting lower in May 2023.
+Let us now examine how wages and each daily expense other than shelter change from March 2022 to May 2023 in more detail. While the wages are shrinking, it is also found that the education and recreation cost are getting lower in May 2023.
 
-If we look further into the second graph, we could see that in March 2022 there are 2 distinct groups of participants. One group has relatively lower wages and lower food expenses, while the other group has higher wages as well as higher food expenses. However, in May 2023 they all become homogeneous.
+If we look further into the second graph, we could also see that in March 2022 there are 2 distinct groups of participants. One group has relatively lower wages and lower food expenses, while the other group has higher wages as well as higher food expenses. However, in May 2023 they become homogeneous.
 
 ```{r eval=FALSE}
 fin_mar2022 <- fin_wide %>%
-  filter(yearmonth == 'Mar 2022')
+  filter(yearmonth == 'Mar 2022') %>%
+  mutate(Education = Education * -1) %>%
+  mutate(Recreation = Recreation * -1) %>%
+  mutate(Food = Food * -1)
 d <- highlight_key(fin_mar2022)
 p1 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Education*-1)) +
+                y = Education)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 p2 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Food*-1)) +
+                y = Food)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 p3 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Recreation*-1)) +
+                y = Recreation)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 fig <- subplot(ggplotly(p1),
                ggplotly(p2),
                ggplotly(p3))
@@ -214,26 +221,32 @@ fig
 
 ```{r eval=FALSE}
 fin_may2023 <- fin_wide %>%
-  filter(yearmonth == 'May 2023')
+  filter(yearmonth == 'May 2023') %>%
+  mutate(Education = Education * -1) %>%
+  mutate(Recreation = Recreation * -1) %>%
+  mutate(Food = Food * -1)
 d <- highlight_key(fin_may2023)
 p1 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Education*-1)) +
+                y = Education)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 p2 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Food*-1)) +
+                y = Food)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 p3 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Recreation*-1)) +
+                y = Recreation)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 fig <- subplot(ggplotly(p1),
                ggplotly(p2),
                ggplotly(p3))
@@ -268,26 +281,32 @@ fig
 
 ```{r echo=FALSE, eval=TRUE}
 fin_mar2022 <- fin_wide %>%
-  filter(yearmonth == 'Mar 2022')
+  filter(yearmonth == 'Mar 2022') %>%
+  mutate(Education = Education * -1) %>%
+  mutate(Recreation = Recreation * -1) %>%
+  mutate(Food = Food * -1)
 d <- highlight_key(fin_mar2022)
 p1 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Education*-1)) +
+                y = Education)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 p2 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Food*-1)) +
+                y = Food)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 p3 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Recreation*-1)) +
+                y = Recreation)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 fig <- subplot(ggplotly(p1),
                ggplotly(p2),
                ggplotly(p3))
@@ -322,26 +341,32 @@ fig
 
 ```{r echo=FALSE, eval=TRUE}
 fin_may2023 <- fin_wide %>%
-  filter(yearmonth == 'May 2023')
+  filter(yearmonth == 'May 2023') %>%
+  mutate(Education = Education * -1) %>%
+  mutate(Recreation = Recreation * -1) %>%
+  mutate(Food = Food * -1)
 d <- highlight_key(fin_may2023)
 p1 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Education*-1)) +
+                y = Education)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 p2 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Food*-1)) +
+                y = Food)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 p3 <- ggplot(data=d, 
             aes(x = Wage,
-                y = Recreation*-1)) +
+                y = Recreation)) +
   geom_point(size=1) +
   coord_cartesian(xlim=c(0,25000),
-                  ylim=c(0,2000))
+                  ylim=c(0,2000)) +
+  scale_x_continuous(breaks=c(0,10000,20000))
 fig <- subplot(ggplotly(p1),
                ggplotly(p2),
                ggplotly(p3))
@@ -380,4 +405,7 @@ Altman, S., et. al. (2021, September 10). *Data Wrangling*. https://dcl-wrangle.
 
 Plotly (n.d.). *Subplots in R*. https://plotly.com/r/subplots/
 
+STHDA. (n.d.). *ggplot2 colors : How to change colors automatically and manually?*. http://www.sthda.com/english/wiki/ggplot2-colors-how-to-change-colors-automatically-and-manually
+
 Zach. (2021, May 26). *How to Calculate the Sum by Group in R (With Examples)*. Statology. https://www.statology.org/sum-by-group-in-r/
+
