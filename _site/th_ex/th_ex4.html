@@ -2527,10 +2527,11 @@ and its extensions.</p>
 required R packages have been installed. If yes, we will load the R
 packages. If they have yet to be installed, we will install the R
 packages and load them onto R environment.</p>
-<p>The packages required for this exercise are <a href="https://www.tidyverse.org/"><strong>tidyverse</strong></a> and <a href="https://cran.r-project.org/web/packages/ViSiElse/index.html"><strong>ViSiElse</strong></a>.</p>
+<p>The packages required for this exercise are <a href="https://www.tidyverse.org/"><strong>tidyverse</strong></a>, <a href="https://rdatatable.gitlab.io/data.table/index.html"><strong>data.table</strong></a>
+and <a href="https://cran.r-project.org/web/packages/ViSiElse/index.html"><strong>ViSiElse</strong></a>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class="va">packages</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&#39;tidyverse&#39;</span>,<span class="st">&#39;ViSiElse&#39;</span><span class="op">)</span>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">packages</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&#39;tidyverse&#39;</span>,<span class="st">&#39;data.table&#39;</span>,<span class="st">&#39;ViSiElse&#39;</span><span class="op">)</span>
 
 <span class="kw">for</span><span class="op">(</span><span class="va">p</span> <span class="kw">in</span> <span class="va">packages</span><span class="op">)</span><span class="op">{</span>
   <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html">require</a></span><span class="op">(</span><span class="va">p</span>, character.only <span class="op">=</span> <span class="cn">T</span><span class="op">)</span><span class="op">)</span><span class="op">{</span>
@@ -2543,11 +2544,43 @@ packages and load them onto R environment.</p>
 </div>
 <h1 id="data">3. Data</h1>
 <h3 id="data-source">3.1 Data Source</h3>
-<p>The original dataset was obtained from <a href="https://vast-challenge.github.io/2022/index.html"><em>VAST
-Challenge 2022</em></a> in csv format. It shows the daily routines of
+<p>The original datasets were obtained from <a href="https://vast-challenge.github.io/2022/index.html"><em>VAST
+Challenge 2022</em></a> in csv format. They show the daily routines of
 1011 residents of Engagement, OH that have agreed to participate in this
-study from March 2022 until May 2023.</p>
+study.</p>
 <h3 id="importing-data">3.2 Importing Data</h3>
+<p>The code chunk below imports datasets from a folder called
+ActivityLogs into R by using <code>fread()</code> of
+<strong>data.table</strong> and saves it as tibble data frame called
+<em>logs</em>. But firstly, <code>list.files()</code> is used to define
+the path where the data files reside and <code>map_df()</code> of
+<strong>purrr</strong> is used to apply a function to elements of a
+list, and then bind the data frames together.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">logs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html">list.files</a></span><span class="op">(</span>path <span class="op">=</span> <span class="st">&quot;./data/ActivityLogs/&quot;</span>,
+                   pattern <span class="op">=</span> <span class="st">&quot;*.csv&quot;</span>,
+                   full.names <span class="op">=</span> <span class="cn">T</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu">map_df</span><span class="op">(</span><span class="op">~</span><span class="fu">fread</span><span class="op">(</span><span class="va">.</span><span class="op">)</span><span class="op">)</span>
+</code></pre>
+</div>
+</div>
+<p>As the datasets are large and the process is time consuming, we will
+save the output tibble into an output file in rds format.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">saveRDS</a></span><span class="op">(</span><span class="va">logs</span>, <span class="st">&#39;data/logs.rds&#39;</span><span class="op">)</span>
+</code></pre>
+</div>
+</div>
+<p>In the future, we just need to read the saved rds data file into R by
+using <code>readRDS()</code>.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">logs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">readRDS</a></span><span class="op">(</span><span class="st">&#39;data/logs.rds&#39;</span><span class="op">)</span>
+</code></pre>
+</div>
+</div>
 <h3 id="data-wrangling">3.3 Data Wrangling</h3>
 <h1 id="daily-patterns">4. Daily Patterns</h1>
 <h1 id="references">5. References</h1>
