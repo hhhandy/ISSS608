@@ -1,0 +1,59 @@
+---
+title: "Take-home Exercise 4"
+description: |
+  Daily Routines Visualisation
+author:
+  - name: Antonius Handy 
+    url: https://www.linkedin.com/in/antoniushandy
+    affiliation: Singapore Management University, Master of IT in Business
+    affiliation_url: https://scis.smu.edu.sg/master-it-business
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+# 1. Overview
+
+In this take-home exercise 4, we are going to analyse and desribe the **daily routines** of two participants of the city of Engagement, Ohio USA by using appropriate visual analytics methods.
+
+The data is processed by using appropriate tidyverse family of packages, whereas the statistical graphics are prepared using ViSiElse and its extensions.
+
+# 2. Getting Started
+
+Before we get started, it is important for us to ensure that the required R packages have been installed. If yes, we will load the R packages. If they have yet to be installed, we will install the R packages and load them onto R environment.
+
+The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/) and [**ViSiElse**](https://cran.r-project.org/web/packages/ViSiElse/index.html).
+
+```{r}
+packages = c('tidyverse','ViSiElse')
+
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+# 3. Data
+
+### 3.1 Data Source
+The original dataset was obtained from [*VAST Challenge 2022*](https://vast-challenge.github.io/2022/index.html) in csv format. It shows the daily routines of 1011 residents of Engagement, OH that have agreed to participate in this study from March 2022 until May 2023.
+
+### 3.2 Importing Data
+
+### 3.3 Data Wrangling
+
+
+# 4. Daily Patterns
+
+# 5. References
