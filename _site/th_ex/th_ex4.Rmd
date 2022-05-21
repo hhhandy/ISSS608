@@ -23,18 +23,18 @@ knitr::opts_chunk$set(echo = TRUE,
 
 # 1. Overview
 
-In this take-home exercise 4, we are going to analyse and desribe the **daily routines** of two participants of the city of Engagement, Ohio USA by using appropriate visual analytics methods.
+In this take-home exercise 4, we are going to analyse and desribe the **daily routines** of two selected participants of the city of Engagement, Ohio USA by using appropriate visual analytics methods.
 
-The data is processed by using appropriate tidyverse family of packages, whereas the statistical graphics are prepared using ViSiElse and its extensions.
+The data is processed by using appropriate tidyverse family of packages, whereas the statistical graphics are prepared using ggplot2/ViSiElse and its extensions.
 
 # 2. Getting Started
 
 Before we get started, it is important for us to ensure that the required R packages have been installed. If yes, we will load the R packages. If they have yet to be installed, we will install the R packages and load them onto R environment.
 
-The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/), [**data.table**](https://rdatatable.gitlab.io/data.table/index.html) and [**ViSiElse**](https://cran.r-project.org/web/packages/ViSiElse/index.html).
+The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/), [**data.table**](https://rdatatable.gitlab.io/data.table/index.html), [**ViSiElse**](https://cran.r-project.org/web/packages/ViSiElse/index.html) and [**zoo**](https://cran.r-project.org/web/packages/zoo/zoo.pdf) and patchwork.
 
 ```{r}
-packages = c('tidyverse','data.table','ViSiElse')
+packages = c('tidyverse','data.table','ViSiElse','zoo','patchwork')
 
 for(p in packages){
   if(!require(p, character.only = T)){
@@ -61,8 +61,13 @@ logs <- list.files(path = "./data/ActivityLogs/",
 ```
 
 As the datasets are large and the process is time consuming, we will save the output tibble into an output file in rds format.
+We will randomly select 2 participants from the original dataset, namely Participant #1 and #2 by using `filter()` or dplyr and we will only see how typical Monday and Sunday look like for each participant by selecting May 2, 2022 and May 8, 2022. To do this, we will create new column called *Date* by using `as.Date()` of zoo.
 
 ```{r eval=FALSE}
+logs <- logs %>%
+  filter(participantId == '1' | participantId == '2') %>%
+  mutate(Date=as.Date(timestamp)) %>%
+  filter(Date == '2022-05-02' | Date == '2022-05-08')
 saveRDS(logs, 'data/logs.rds')
 ```
 
@@ -74,7 +79,125 @@ logs <- readRDS('data/logs.rds')
 
 ### 3.3 Data Wrangling
 
+In this section, we will combine the 2 columns - currentMode and sleepStatus into one column called Activity by using `unite()`.
 
-# 4. Daily Patterns
+The code chunk below will select participant #1 and his/her activities on Monday and save it as a new data frame called *logs1_mon*.
 
-# 5. References
+```{r}
+logs1_mon <- logs %>%
+  filter(participantId == 1) %>%
+  unite(Activity, c(currentMode,sleepStatus), sep = '-', remove = FALSE) %>%
+  mutate(StartTime = format(timestamp,"%H:%M:%S"),
+        EndTime = timestamp+(5*60)) %>%
+  filter(Date == '2022-05-02')
+```
+
+The code chunk below will select participant #2 and his/her activities on Monday and save it as a new data frame called *logs2_mon*.
+
+```{r}
+logs1_sun <- logs %>%
+  filter(participantId == 1) %>%
+  unite(Activity, c(currentMode,sleepStatus), sep = '-', remove = FALSE) %>%
+  mutate(StartTime = format(timestamp,"%H:%M:%S"),
+        EndTime = timestamp+(5*60)) %>%
+  filter(Date == '2022-05-08')
+```
+
+The code chunk below will select participant #1 and his/her activities on Sunday and save it as a new data frame called *logs1_sun*.
+
+```{r}
+logs2_mon <- logs %>%
+  filter(participantId == 2) %>%
+  unite(Activity, c(currentMode,sleepStatus), sep = '-', remove = FALSE) %>%
+  mutate(StartTime = format(timestamp,"%H:%M:%S"),
+        EndTime = timestamp+(5*60)) %>%
+  filter(Date == '2022-05-02')
+```
+
+The code chunk below will select participant #2 and his/her activities on Sunday and save it as a new data frame called *logs2_sun*.
+
+```{r}
+logs2_sun <- logs %>%
+  filter(participantId == 2) %>%
+  unite(Activity, c(currentMode,sleepStatus), sep = '-', remove = FALSE) %>%
+  mutate(StartTime = format(timestamp,"%H:%M:%S"),
+        EndTime = timestamp+(5*60)) %>%
+  filter(Date == '2022-05-08')
+```
+
+# 4. Daily Routines Visualisation
+
+### Typical Monday for Each Participant
+
+```{r fig.height = 10}
+m1 <- ggplot(data = logs1_mon,
+       aes(x = timestamp, y = Activity)) +
+  geom_point() +
+  labs(x = "Time",
+       y = "Activity",
+       title = "Typical Monday for Participant #1") +
+  theme(axis.title.y= element_text(angle=0))
+
+m2 <- ggplot(data = logs2_mon,
+       aes(x = timestamp, y = Activity)) +
+  geom_point() +
+  labs(x = "Time",
+       y = "Activity",
+       title = "Typical Monday for Participant #2") +
+  theme(axis.title.y= element_text(angle=0))
+
+m1 / m2
+```
+It is observed that participant #2 wakes up earlier than participant #1 and sleeps earlier at night. In the morning, participant #2 arrives at the office and immediately goes to restaurant for breakfast, while participant #1 does not go to restaurant at all throughout the day. The working hours for both participants are similar, but participant #2 starts and stops working earlier than participant #1.
+
+### Typical Sunday for Each Participant
+
+```{r fig.height = 10}
+s1<- ggplot(data = logs1_sun,
+       aes(x = timestamp, y = Activity)) +
+  geom_point() +
+  labs(x = "Time",
+       y = "Activity",
+       title = "Typical Sunday for Participant #1") +
+  theme(axis.title.y= element_text(angle=0))
+
+s2<- ggplot(data = logs2_sun,
+       aes(x = timestamp, y = Activity)) +
+  geom_point() +
+  labs(x = "Time",
+       y = "Activity",
+       title = "Typical Sunday for Participant #2") +
+  theme(axis.title.y= element_text(angle=0))
+
+s1 / s2
+```
+Similar to Monday's routines, on Sunday participant #2 also wakes up and sleeps earlier than participant #1. Participant #2 spends his/her entire day at home, while participant #1 spends some time in the morning to go to the restaurant for breakfast.
+
+# 5. Future Work
+
+Daily activities could also be visualised by using ViSiElse method. However, we must specify duration for each activity and put this on x-axis instead of timestamp. The below snapshot shows the example of ViSiElse graph.
+
+![](image/visielse_ref.png)
+
+The initial code chunk is shown here.
+
+```{r}
+logs1_v <- logs %>%
+  filter(participantId == '1') %>%
+  unite(Activity, c(currentMode,sleepStatus), sep = '-', remove = FALSE) %>%
+  mutate(EndTime = lead(timestamp)) %>%
+  mutate(Date=as.Date(timestamp),
+         EndTime = lead(timestamp),
+         Day = weekdays(as.Date(timestamp)),
+         Duration = difftime(EndTime,timestamp,units="mins")) %>%
+  filter(Date == '2022-05-02') %>%
+  pivot_wider(names_from = "Activity",
+              values_from = "Duration")
+
+print(logs1_v)
+```
+
+# 6. References
+
+Marsja, E. (2021, February 14). *How to Concatenate Two Columns (or More) in R – stringr, tidyr*. https://www.marsja.se/how-to-concatenate-two-columns-or-more-in-r-stringr-tidyr/
+
