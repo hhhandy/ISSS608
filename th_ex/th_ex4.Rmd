@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE,
 
 # 1. Overview
 
-In this take-home exercise 4, we are going to analyse and desribe the **daily routines** of two selected participants of the city of Engagement, Ohio USA by using appropriate visual analytics methods.
+In this take-home exercise 4, we are going to analyse and describe the **daily routines** of two selected participants of the city of Engagement, Ohio USA by using appropriate visual analytics methods.
 
 The data is processed by using appropriate tidyverse family of packages, whereas the statistical graphics are prepared using ggplot2/ViSiElse and its extensions.
 
@@ -31,7 +31,7 @@ The data is processed by using appropriate tidyverse family of packages, whereas
 
 Before we get started, it is important for us to ensure that the required R packages have been installed. If yes, we will load the R packages. If they have yet to be installed, we will install the R packages and load them onto R environment.
 
-The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/), [**data.table**](https://rdatatable.gitlab.io/data.table/index.html), [**ViSiElse**](https://cran.r-project.org/web/packages/ViSiElse/index.html) and [**zoo**](https://cran.r-project.org/web/packages/zoo/zoo.pdf) and patchwork.
+The packages required for this exercise are [**tidyverse**](https://www.tidyverse.org/), [**data.table**](https://rdatatable.gitlab.io/data.table/index.html), [**ViSiElse**](https://cran.r-project.org/web/packages/ViSiElse/index.html), [**zoo**](https://cran.r-project.org/web/packages/zoo/zoo.pdf) and [**patchwork**](https://patchwork.data-imaginist.com/index.html).
 
 ```{r}
 packages = c('tidyverse','data.table','ViSiElse','zoo','patchwork')
@@ -61,7 +61,7 @@ logs <- list.files(path = "./data/ActivityLogs/",
 ```
 
 As the datasets are large and the process is time consuming, we will save the output tibble into an output file in rds format.
-We will randomly select 2 participants from the original dataset, namely Participant #1 and #2 by using `filter()` or dplyr and we will only see how typical Monday and Sunday look like for each participant by selecting May 2, 2022 and May 8, 2022. To do this, we will create new column called *Date* by using `as.Date()` of zoo.
+We will randomly select 2 participants from the joined dataset, namely Participant #1 and #2 by using `filter()` of dplyr and we will see how typical Monday and Sunday look like for each participant by selecting May 2, 2022 and May 8, 2022. To do this, we will create a new column called *Date* by using `as.Date()` of zoo.
 
 ```{r eval=FALSE}
 logs <- logs %>%
@@ -179,16 +179,14 @@ Daily activities could also be visualised by using ViSiElse method. However, we 
 
 ![](image/visielse_ref.png)
 
-The initial code chunk is shown here.
+The initial code chunk is shown here. To get a total duration for each activity, we will aggregate a new column called *Duration*.
 
 ```{r}
 logs1_v <- logs %>%
   filter(participantId == '1') %>%
   unite(Activity, c(currentMode,sleepStatus), sep = '-', remove = FALSE) %>%
-  mutate(EndTime = lead(timestamp)) %>%
   mutate(Date=as.Date(timestamp),
          EndTime = lead(timestamp),
-         Day = weekdays(as.Date(timestamp)),
          Duration = difftime(EndTime,timestamp,units="mins")) %>%
   filter(Date == '2022-05-02') %>%
   pivot_wider(names_from = "Activity",
