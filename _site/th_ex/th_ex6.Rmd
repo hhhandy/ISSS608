@@ -31,10 +31,10 @@ The data is processed by using appropriate tidyverse family of packages, whereas
 
 Before we get started, it is important for us to ensure that the required R packages have been installed. If yes, we will load the R packages. If they have yet to be installed, we will install the R packages and load them onto R environment.
 
-The packages required for this exercise are **tidyverse**, **tidygraph**, **ggraph**, **visNetwork**, **lubridate** and **clock**.
+The packages required for this exercise are **tidyverse**, **tidygraph**, **ggraph**, **igraph**, **graphlayouts**, **visNetwork**, **lubridate** and **clock**.
 
 ```{r}
-packages = c('tidyverse','tidygraph','ggraph','visNetwork','lubridate','clock')
+packages = c('tidyverse','tidygraph','ggraph','igraph','graphlayouts','visNetwork','lubridate','clock')
 
 for(p in packages){
   if(!require(p, character.only = T)){
@@ -51,16 +51,141 @@ The original datasets were obtained from [*VAST Challenge 2022*](https://vast-ch
 
 ### 3.2 Importing Data
 
+The code chunk below imports the original datasets called *SocialNetwork.csv* and *Participants.csv* into R by using `read_csv()` of **readr** and saves them as tibble data frame called *network* and *participant* respectively. 
+
+However, since the size of SocialNetwork.csv is big, we will save the output tibble into an output file in rds format and read the saved rds data file into R by using `readRDS()`.
+
+```{r eval=FALSE}
+network <- read_csv("data/SocialNetwork.csv")
+saveRDS(network, 'data/SocialNetwork.rds')
+```
+
+```{r}
+participant <- read_csv("data/Participants.csv")
+network <- readRDS('data/SocialNetwork.rds')
+```
+
+It is observed that there are 7,482,488 interactions in total among 1011 participants.
+
+```{r}
+glimpse(network)
+glimpse(participant)
+```
 
 ### 3.3 Data Wrangling
 
+It is important in network data analysis to have two datasets that describe the edges and nodes. For edges dataset, the interaction source and target must be placed in the first two columns. Therefore, we will rearrange the columns from network dataset by using `select()` of **dplyr** and create a new data frame called *network_edges*. We will then use `year(), month() and week()` function of **lubridate** to return the year, month of the year and week of the year respectively. In this exercise, we will only focus on the interactions occurred in the second week of March 2022 (week 10 of the year).
+
+Next, we will aggregate the interaction by senders and receivers.
+
+```{r}
+network_edges <- network %>%
+  select(participantIdFrom,participantIdTo,timestamp) %>%
+  mutate(Year = year(timestamp),
+         Month = month(timestamp),
+         Week = lubridate::week(timestamp)) %>%
+  filter(Year == 2022) %>%
+  filter(Month == 3) %>%
+  filter(Week == 10) %>%
+  group_by(participantIdFrom,participantIdTo) %>%
+    summarise(Weight = n()) %>%
+  filter(participantIdFrom!=participantIdTo) %>%
+  ungroup()
+```
+
+As the nodes dataset requires the participant ID, we will select participantIdFrom and their unique rows from network dataset, and save it as *network_nodes*.
+
+```{r}
+network_nodes <- network %>%
+  select(participantIdFrom) %>%
+  distinct(participantIdFrom, .keep_all = TRUE) %>%
+  rename(participantId = participantIdFrom)
+```
+
+However, this network_edges dataset is still incomplete as it only shows the participant ID. Thus, we will use left join function (indicated by `all.x = TRUE`) to join this dataset with participant dataset to obtain the information of each node and create a new data frame called *network_nodes_all*. There are 963 rows in total, therefore we can say that only 963 out of 1011 participants interact with each other throughout this study.
+
+```{r}
+network_nodes_all <- merge(x = network_nodes, y = participant, by = "participantId", all.x = TRUE)
+glimpse(network_nodes_all)
+```
 
 # 4. Social Network Visualisation
 
+We will start building the graph model by using `graph_from_data_frame()` of **igraph** and `as_tbl_graph()` of **tidygraph**. The output reveals that there are 963 nodes and 4508 edges.
+
+```{r}
+network_graph <- graph_from_data_frame(network_edges,
+                                vertices = network_nodes_all) %>%
+  as_tbl_graph()
+network_graph
+```
+
+### Overall Social Network
+
+It is observed that in the second week of March there are some people that have zero interaction as they are not linked to each other.
+
+```{r fig.width=10, fig.height=8}
+set.seed(1234)
+ggraph(network_graph,
+       layout = "fr") + 
+  geom_edge_link() +
+  geom_node_point() +
+  labs(title = "Not Everyone Interacts with Each Other") +
+  theme_graph()
+```
+
+### Social Network by Interest Group
+
+While group B looks to have a greater level of connectivity, we can also see that there are still people that do not interact with each other even though they are in the same interest groups.
+
+```{r fig.width=10, fig.height=8}
+set_graph_style()
+ggraph(network_graph,
+       layout = "stress") + 
+  geom_edge_link(aes(width=Weight), 
+                 alpha=0.1) +
+  scale_edge_width(range = c(0.1, 5)) +
+  geom_node_point(aes(colour = interestGroup), 
+                  size = 2) + 
+  facet_nodes(~interestGroup)+
+  th_foreground(foreground = "grey80",  
+                border = TRUE) +
+  labs(title = "Interest Group B is More Well-connected than Others") +
+  theme(legend.position = 'bottom')
+```
+
+### Social Network by Education Level
+
+Interactive graph below allows us to select participant ID from the drop-down list to see how that person interacts with other people. At a glance, those that do not interact with each other are mostly residents graduated from high school or college.
+
+```{r}
+network_edges_aggregated <- network_edges %>%
+  rename(from = participantIdFrom) %>%
+  rename(to = participantIdTo) %>%
+  filter(from!=to) %>%
+  ungroup()
+```
+
+```{r}
+network_nodes_all <- network_nodes_all %>%
+  rename(group = educationLevel,
+         id = participantId)
+```
+
+```{r}
+visNetwork(network_nodes_all,
+           network_edges_aggregated,
+           main = "Passive People Mostly Have High School or College Degree") %>%
+  visIgraphLayout(layout = "layout_with_fr") %>%
+  visOptions(highlightNearest = TRUE,
+             nodesIdSelection = TRUE) %>%
+  visLegend() %>%
+  visLayout(randomSeed = 1234) %>%
+  visEdges(arrows = "from")
+```
 
 # 5. References
 
+DataScience Made Simple (n.d.). Rearrange or Reorder the Rows and Columns in R Using dplyr. https://www.datasciencemadesimple.com/re-arrange-re-order-column-dataframe-r-using-dplyr/
 
-
-
-
+Data Cornering (2021, October 15). How Use dplyr Distinct with Exceptions, Select Unique Rows in R.  https://datacornering.com/how-use-dplyr-distinct-with-exceptions-select-unique-rows-in-r/
