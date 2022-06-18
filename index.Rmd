@@ -15,4 +15,4 @@ knitr::opts_chunk$set(echo = FALSE)
 
 You will see how visual analytics techniques can be used to interact with data from various sources and formats.
 
-[![](R.png){width=30%a}](https://www.rstudio.com/products/rstudio/)
+[![](R.png){width=30%}](https://www.rstudio.com/products/rstudio/)
