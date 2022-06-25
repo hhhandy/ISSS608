@@ -34,4 +34,6 @@ navbar:
         href: "In-class_Ex/In-class_Ex07.html"
       - text: "In-class Exercise 9"
         href: "In-class_Ex/In-class_Ex09.html"
+      - text: "In-class Exercise 10"
+        href: "In-class_Ex/In-class_Ex10.html"
 output: distill::distill_article
